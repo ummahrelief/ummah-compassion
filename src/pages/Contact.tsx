@@ -5,32 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Phone, MapPin, Clock, MessageCircle, Send } from "lucide-react";
+import { Mail, Send } from "lucide-react";
 
 const contactInfo = [
   {
     icon: Mail,
     title: "Email Us",
-    details: "info@urd-fund.org",
+    details: "urdf@proton.me",
     description: "We respond within 24-48 hours",
-  },
-  {
-    icon: Phone,
-    title: "Call Us",
-    details: "+1 (555) 123-4567",
-    description: "Mon-Fri, 9am-5pm EST",
-  },
-  {
-    icon: MessageCircle,
-    title: "WhatsApp",
-    details: "+1 (555) 987-6543",
-    description: "Quick responses available",
-  },
-  {
-    icon: Clock,
-    title: "Office Hours",
-    details: "Mon-Fri: 9am-5pm",
-    description: "Weekends: By appointment",
   },
 ];
 
@@ -99,11 +81,12 @@ const Contact = () => {
       {/* Contact Info Cards */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            {contactInfo.map((info, index) => (
-              <div
+          <div className="flex justify-center mb-16">
+            {contactInfo.map((info) => (
+              <a
                 key={info.title}
-                className="bg-card rounded-2xl p-6 shadow-soft text-center hover:shadow-card transition-all duration-300"
+                href="mailto:urdf@proton.me"
+                className="bg-card rounded-2xl p-8 shadow-soft text-center hover:shadow-card transition-all duration-300 max-w-sm"
               >
                 <div className="w-14 h-14 rounded-xl bg-gold/10 flex items-center justify-center mx-auto mb-4">
                   <info.icon className="w-7 h-7 text-gold" />
@@ -113,7 +96,7 @@ const Contact = () => {
                 </h3>
                 <p className="text-foreground font-medium mb-1">{info.details}</p>
                 <p className="text-sm text-muted-foreground">{info.description}</p>
-              </div>
+              </a>
             ))}
           </div>
 
@@ -204,24 +187,6 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* Map Placeholder */}
-      <section className="py-16 bg-secondary">
-        <div className="container mx-auto px-4">
-          <div className="bg-card rounded-2xl overflow-hidden shadow-card">
-            <div className="aspect-[21/9] bg-muted flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="w-12 h-12 text-gold mx-auto mb-4" />
-                <h3 className="font-display text-xl font-semibold text-foreground mb-2">
-                  Global Operations Center
-                </h3>
-                <p className="text-muted-foreground">
-                  Serving communities across 12+ countries worldwide
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
     </Layout>
   );
 };

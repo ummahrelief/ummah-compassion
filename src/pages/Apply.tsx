@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, CreditCard, CheckCircle2 } from "lucide-react";
+import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail } from "lucide-react";
 
 const Apply = () => {
   const { toast } = useToast();
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     organizationName: "",
     applicantName: "",
@@ -16,18 +18,14 @@ const Apply = () => {
     phone: "",
     country: "",
     location: "",
+    projectDescription: "",
     monthlyExpenditure: "",
     requestedAmount: "",
-    projectDescription: "",
   });
-  const [files, setFiles] = useState<{
-    registration: File | null;
-    idDocument: File | null;
-    projectPhotos: File[];
-  }>({
-    registration: null,
-    idDocument: null,
-    projectPhotos: [],
+  const [documentsConfirmed, setDocumentsConfirmed] = useState({
+    registration: false,
+    idDocument: false,
+    projectPhotos: false,
   });
   const [showPayment, setShowPayment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,21 +38,10 @@ const Apply = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
-    if (e.target.files) {
-      if (type === "projectPhotos") {
-        setFiles({ ...files, projectPhotos: Array.from(e.target.files) });
-      } else {
-        setFiles({ ...files, [type]: e.target.files[0] });
-      }
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
-    if (!formData.organizationName || !formData.email || !formData.requestedAmount) {
+    if (!formData.organizationName || !formData.applicantName || !formData.email || !formData.phone || !formData.country || !formData.location || !formData.projectDescription) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -63,10 +50,25 @@ const Apply = () => {
       return;
     }
 
-    if (!files.registration || !files.idDocument) {
+    setCurrentStep(2);
+  };
+
+  const handleStep2Submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.monthlyExpenditure || !formData.requestedAmount) {
       toast({
-        title: "Missing Documents",
-        description: "Please upload all required documents.",
+        title: "Missing Information",
+        description: "Please fill in all financial information.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!documentsConfirmed.registration || !documentsConfirmed.idDocument) {
+      toast({
+        title: "Documents Required",
+        description: "Please confirm you have sent the required documents to our email.",
         variant: "destructive",
       });
       return;
@@ -78,14 +80,12 @@ const Apply = () => {
   const handlePayment = () => {
     setIsSubmitting(true);
     
-    // Simulate payment processing
     setTimeout(() => {
       setIsSubmitting(false);
       toast({
         title: "Application Submitted!",
         description: "Your application has been received. We will review it and contact you within 5-7 business days.",
       });
-      // Reset form
       setFormData({
         organizationName: "",
         applicantName: "",
@@ -93,12 +93,13 @@ const Apply = () => {
         phone: "",
         country: "",
         location: "",
+        projectDescription: "",
         monthlyExpenditure: "",
         requestedAmount: "",
-        projectDescription: "",
       });
-      setFiles({ registration: null, idDocument: null, projectPhotos: [] });
+      setDocumentsConfirmed({ registration: false, idDocument: false, projectPhotos: false });
       setShowPayment(false);
+      setCurrentStep(1);
     }, 2000);
   };
 
@@ -125,228 +126,283 @@ const Apply = () => {
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
+            {/* Step Indicator */}
+            {!showPayment && (
+              <div className="flex items-center justify-center mb-12">
+                <div className="flex items-center gap-4">
+                  <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-gold' : 'text-muted-foreground'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${currentStep >= 1 ? 'bg-gold text-forest-dark' : 'bg-muted text-muted-foreground'}`}>
+                      1
+                    </div>
+                    <span className="hidden sm:inline font-medium">Basic Info</span>
+                  </div>
+                  <div className={`w-12 h-0.5 ${currentStep >= 2 ? 'bg-gold' : 'bg-muted'}`} />
+                  <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-gold' : 'text-muted-foreground'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${currentStep >= 2 ? 'bg-gold text-forest-dark' : 'bg-muted text-muted-foreground'}`}>
+                      2
+                    </div>
+                    <span className="hidden sm:inline font-medium">Financial & Documents</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {!showPayment ? (
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Organization Information */}
-                <div className="bg-card rounded-2xl p-8 shadow-card">
-                  <h2 className="font-display text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-gold" />
-                    Organization Information
-                  </h2>
-                  
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="organizationName">Organization Name *</Label>
-                      <Input
-                        id="organizationName"
-                        name="organizationName"
-                        value={formData.organizationName}
-                        onChange={handleInputChange}
-                        placeholder="Enter organization name"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="applicantName">Applicant Name *</Label>
-                      <Input
-                        id="applicantName"
-                        name="applicantName"
-                        value={formData.applicantName}
-                        onChange={handleInputChange}
-                        placeholder="Your full name"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email Address *</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        placeholder="your@email.com"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number *</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="+1 234 567 8900"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="country">Country *</Label>
-                      <Input
-                        id="country"
-                        name="country"
-                        value={formData.country}
-                        onChange={handleInputChange}
-                        placeholder="Country"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="location">City/Location *</Label>
-                      <Input
-                        id="location"
-                        name="location"
-                        value={formData.location}
-                        onChange={handleInputChange}
-                        placeholder="City or region"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Financial Information */}
-                <div className="bg-card rounded-2xl p-8 shadow-card">
-                  <h2 className="font-display text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-gold" />
-                    Financial Information
-                  </h2>
-                  
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="monthlyExpenditure">Current Monthly Expenditure (USD) *</Label>
-                      <Input
-                        id="monthlyExpenditure"
-                        name="monthlyExpenditure"
-                        type="number"
-                        value={formData.monthlyExpenditure}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 5000"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="requestedAmount">Requested Amount (USD) *</Label>
-                      <Input
-                        id="requestedAmount"
-                        name="requestedAmount"
-                        type="number"
-                        value={formData.requestedAmount}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 10000"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {formData.requestedAmount && (
-                    <div className="mt-4 p-4 rounded-lg bg-gold/10 border border-gold/20">
-                      <p className="text-sm text-foreground">
-                        <span className="font-medium">Processing Fee (4%):</span>{" "}
-                        <span className="text-gold font-semibold">${processingFee} USD</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        This fee helps us process applications efficiently and verify project authenticity.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Document Upload */}
-                <div className="bg-card rounded-2xl p-8 shadow-card">
-                  <h2 className="font-display text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-                    <Upload className="w-5 h-5 text-gold" />
-                    Document Upload
-                  </h2>
-                  
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label>Registration Certificate *</Label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold/50 transition-colors">
-                        <input
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={(e) => handleFileChange(e, "registration")}
-                          className="hidden"
-                          id="registration"
-                        />
-                        <label htmlFor="registration" className="cursor-pointer">
-                          <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                          <p className="text-sm text-muted-foreground">
-                            {files.registration ? files.registration.name : "Click to upload registration certificate"}
-                          </p>
-                        </label>
+              <>
+                {/* Step 1: Basic Information & Project Description */}
+                {currentStep === 1 && (
+                  <form onSubmit={handleStep1Submit} className="space-y-8">
+                    <div className="bg-card rounded-2xl p-8 shadow-card">
+                      <h2 className="font-display text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-gold" />
+                        Organization Information
+                      </h2>
+                      
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="organizationName">Organization Name *</Label>
+                          <Input
+                            id="organizationName"
+                            name="organizationName"
+                            value={formData.organizationName}
+                            onChange={handleInputChange}
+                            placeholder="Enter organization name"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="applicantName">Applicant Name *</Label>
+                          <Input
+                            id="applicantName"
+                            name="applicantName"
+                            value={formData.applicantName}
+                            onChange={handleInputChange}
+                            placeholder="Your full name"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email Address *</Label>
+                          <Input
+                            id="email"
+                            name="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            placeholder="your@email.com"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Phone Number *</Label>
+                          <Input
+                            id="phone"
+                            name="phone"
+                            type="tel"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="+1 234 567 8900"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="country">Country *</Label>
+                          <Input
+                            id="country"
+                            name="country"
+                            value={formData.country}
+                            onChange={handleInputChange}
+                            placeholder="Country"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="location">City/Location *</Label>
+                          <Input
+                            id="location"
+                            name="location"
+                            value={formData.location}
+                            onChange={handleInputChange}
+                            placeholder="City or region"
+                            required
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Applicant ID/Passport *</Label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold/50 transition-colors">
-                        <input
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={(e) => handleFileChange(e, "idDocument")}
-                          className="hidden"
-                          id="idDocument"
+                    <div className="bg-card rounded-2xl p-8 shadow-card">
+                      <h2 className="font-display text-xl font-semibold text-foreground mb-6">
+                        Project Description
+                      </h2>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="projectDescription">Detailed Project Description *</Label>
+                        <Textarea
+                          id="projectDescription"
+                          name="projectDescription"
+                          value={formData.projectDescription}
+                          onChange={handleInputChange}
+                          placeholder="Please describe your project, its goals, current challenges, and how the requested funds will be used..."
+                          rows={6}
+                          required
                         />
-                        <label htmlFor="idDocument" className="cursor-pointer">
-                          <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                          <p className="text-sm text-muted-foreground">
-                            {files.idDocument ? files.idDocument.name : "Click to upload ID or passport"}
-                          </p>
-                        </label>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Project Photos (Optional)</Label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold/50 transition-colors">
-                        <input
-                          type="file"
-                          accept=".jpg,.jpeg,.png"
-                          multiple
-                          onChange={(e) => handleFileChange(e, "projectPhotos")}
-                          className="hidden"
-                          id="projectPhotos"
-                        />
-                        <label htmlFor="projectPhotos" className="cursor-pointer">
-                          <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                          <p className="text-sm text-muted-foreground">
-                            {files.projectPhotos.length > 0 
-                              ? `${files.projectPhotos.length} file(s) selected` 
-                              : "Click to upload project photos"}
+                    <Button type="submit" variant="gold" size="lg" className="w-full">
+                      Continue to Step 2
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </form>
+                )}
+
+                {/* Step 2: Financial Information & Document Confirmation */}
+                {currentStep === 2 && (
+                  <form onSubmit={handleStep2Submit} className="space-y-8">
+                    <div className="bg-card rounded-2xl p-8 shadow-card">
+                      <h2 className="font-display text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 text-gold" />
+                        Financial Information
+                      </h2>
+                      
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="monthlyExpenditure">Current Monthly Expenditure (USD) *</Label>
+                          <Input
+                            id="monthlyExpenditure"
+                            name="monthlyExpenditure"
+                            type="number"
+                            value={formData.monthlyExpenditure}
+                            onChange={handleInputChange}
+                            placeholder="e.g., 5000"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="requestedAmount">Requested Amount (USD) *</Label>
+                          <Input
+                            id="requestedAmount"
+                            name="requestedAmount"
+                            type="number"
+                            value={formData.requestedAmount}
+                            onChange={handleInputChange}
+                            placeholder="e.g., 10000"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {formData.requestedAmount && (
+                        <div className="mt-4 p-4 rounded-lg bg-gold/10 border border-gold/20">
+                          <p className="text-sm text-foreground">
+                            <span className="font-medium">Processing Fee (4%):</span>{" "}
+                            <span className="text-gold font-semibold">${processingFee} USD</span>
                           </p>
-                        </label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            This fee helps us process applications efficiently and verify project authenticity.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Document Confirmation */}
+                    <div className="bg-card rounded-2xl p-8 shadow-card">
+                      <h2 className="font-display text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
+                        <Mail className="w-5 h-5 text-gold" />
+                        Document Submission
+                      </h2>
+                      
+                      <div className="bg-gold/10 border border-gold/20 rounded-lg p-4 mb-6">
+                        <p className="text-sm text-foreground mb-2">
+                          <span className="font-semibold">Please email the following documents to:</span>
+                        </p>
+                        <a 
+                          href="mailto:urdf@proton.me" 
+                          className="text-gold font-semibold hover:underline"
+                        >
+                          urdf@proton.me
+                        </a>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Include your organization name in the email subject line.
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary">
+                          <Checkbox
+                            id="registration"
+                            checked={documentsConfirmed.registration}
+                            onCheckedChange={(checked) => 
+                              setDocumentsConfirmed({ ...documentsConfirmed, registration: checked as boolean })
+                            }
+                          />
+                          <div className="flex-1">
+                            <label htmlFor="registration" className="text-sm font-medium text-foreground cursor-pointer">
+                              Registration Certificate *
+                            </label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              I have sent the organization's registration certificate
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary">
+                          <Checkbox
+                            id="idDocument"
+                            checked={documentsConfirmed.idDocument}
+                            onCheckedChange={(checked) => 
+                              setDocumentsConfirmed({ ...documentsConfirmed, idDocument: checked as boolean })
+                            }
+                          />
+                          <div className="flex-1">
+                            <label htmlFor="idDocument" className="text-sm font-medium text-foreground cursor-pointer">
+                              Applicant ID/Passport *
+                            </label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              I have sent a copy of my ID or passport
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary">
+                          <Checkbox
+                            id="projectPhotos"
+                            checked={documentsConfirmed.projectPhotos}
+                            onCheckedChange={(checked) => 
+                              setDocumentsConfirmed({ ...documentsConfirmed, projectPhotos: checked as boolean })
+                            }
+                          />
+                          <div className="flex-1">
+                            <label htmlFor="projectPhotos" className="text-sm font-medium text-foreground cursor-pointer">
+                              Project Photos (Optional)
+                            </label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              I have sent photos of the project/facility
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Project Description */}
-                <div className="bg-card rounded-2xl p-8 shadow-card">
-                  <h2 className="font-display text-xl font-semibold text-foreground mb-6">
-                    Project Description
-                  </h2>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="projectDescription">Detailed Project Description *</Label>
-                    <Textarea
-                      id="projectDescription"
-                      name="projectDescription"
-                      value={formData.projectDescription}
-                      onChange={handleInputChange}
-                      placeholder="Please describe your project, its goals, current challenges, and how the requested funds will be used..."
-                      rows={6}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" variant="gold" size="lg" className="w-full">
-                  Continue to Payment
-                </Button>
-              </form>
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        className="flex-1"
+                        onClick={() => setCurrentStep(1)}
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back
+                      </Button>
+                      <Button type="submit" variant="gold" size="lg" className="flex-1">
+                        Continue to Payment
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </>
             ) : (
               /* Payment Section */
               <div className="bg-card rounded-2xl p-8 shadow-card">

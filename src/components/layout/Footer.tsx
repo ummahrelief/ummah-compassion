@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube } from "lucide-react";
+import { Heart, Mail, Facebook, Twitter, Instagram, Youtube } from "lucide-react";
 
 const footerLinks = {
   organization: [
@@ -99,21 +99,12 @@ export function Footer() {
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
                 <Mail className="w-5 h-5 text-gold mt-0.5" />
-                <span className="text-sm text-primary-foreground/80">
-                  info@urd-fund.org
-                </span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-gold mt-0.5" />
-                <span className="text-sm text-primary-foreground/80">
-                  +1 (555) 123-4567
-                </span>
-              </li>
-              <li className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-gold mt-0.5" />
-                <span className="text-sm text-primary-foreground/80">
-                  Global Operations Center
-                </span>
+                <a 
+                  href="mailto:urdf@proton.me" 
+                  className="text-sm text-primary-foreground/80 hover:text-gold transition-colors"
+                >
+                  urdf@proton.me
+                </a>
               </li>
             </ul>
           </div>
