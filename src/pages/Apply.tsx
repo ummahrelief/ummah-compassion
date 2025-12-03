@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail } from "lucide-react";
+import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail, Building2, Smartphone, Bitcoin, Users } from "lucide-react";
 
 const Apply = () => {
   const { toast } = useToast();
@@ -29,6 +29,7 @@ const Apply = () => {
   });
   const [showPayment, setShowPayment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
 
   const processingFee = formData.requestedAmount 
     ? (parseFloat(formData.requestedAmount) * 0.04).toFixed(2) 
@@ -396,7 +397,7 @@ const Apply = () => {
                         Back
                       </Button>
                       <Button type="submit" variant="gold" size="lg" className="flex-1">
-                        Continue to Payment
+                        Confirm Application
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
                     </div>
@@ -435,6 +436,34 @@ const Apply = () => {
                   </div>
                 </div>
 
+                {/* Payment Method Selection */}
+                <div className="mb-8">
+                  <h3 className="font-medium text-foreground mb-4">Select Payment Method</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[
+                      { id: "bank", label: "Bank Transfer", icon: Building2 },
+                      { id: "card", label: "Card", icon: CreditCard },
+                      { id: "mobile", label: "Mobile Money", icon: Smartphone },
+                      { id: "crypto", label: "Crypto (BTC)", icon: Bitcoin },
+                      { id: "other", label: "Other / Agent", icon: Users },
+                    ].map((method) => (
+                      <button
+                        key={method.id}
+                        type="button"
+                        onClick={() => setSelectedPaymentMethod(method.id)}
+                        className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${
+                          selectedPaymentMethod === method.id
+                            ? "border-gold bg-gold/10 text-gold"
+                            : "border-border bg-secondary hover:border-gold/50 text-foreground"
+                        }`}
+                      >
+                        <method.icon className="w-6 h-6" />
+                        <span className="text-sm font-medium">{method.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-4 mb-8">
                   <div className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-gold mt-0.5" />
@@ -468,7 +497,7 @@ const Apply = () => {
                     variant="gold"
                     className="flex-1"
                     onClick={handlePayment}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !selectedPaymentMethod}
                   >
                     {isSubmitting ? "Processing..." : `Pay $${processingFee} USD`}
                   </Button>
