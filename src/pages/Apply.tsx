@@ -472,7 +472,7 @@ const Apply = () => {
                         Click below to complete your payment via bank transfer, card, or mobile money:
                       </p>
                       <a
-                        href="https://pay.example.com/urdf"
+                        href="https://paywith.nobuk.africa/ghejkngtla"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 text-gold hover:text-gold/80 font-medium"
