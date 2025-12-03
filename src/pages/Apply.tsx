@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail, Bitcoin, Users } from "lucide-react";
+import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail, Bitcoin, Users, Wallet, Building2, Smartphone } from "lucide-react";
 
 const Apply = () => {
   const { toast } = useToast();
@@ -21,6 +21,15 @@ const Apply = () => {
     projectDescription: "",
     monthlyExpenditure: "",
     requestedAmount: "",
+    payoutMethod: "",
+    bankName: "",
+    bankAccountName: "",
+    bankAccountNumber: "",
+    bankSwiftCode: "",
+    cryptoWalletAddress: "",
+    mobileMoneyProvider: "",
+    mobileMoneyNumber: "",
+    mobileMoneyName: "",
   });
   const [documentsConfirmed, setDocumentsConfirmed] = useState({
     registration: false,
@@ -101,6 +110,15 @@ const Apply = () => {
         projectDescription: "",
         monthlyExpenditure: "",
         requestedAmount: "",
+        payoutMethod: "",
+        bankName: "",
+        bankAccountName: "",
+        bankAccountNumber: "",
+        bankSwiftCode: "",
+        cryptoWalletAddress: "",
+        mobileMoneyProvider: "",
+        mobileMoneyNumber: "",
+        mobileMoneyName: "",
       });
       setDocumentsConfirmed({ registration: false, idDocument: false, projectPhotos: false });
       setShowPayment(false);
@@ -306,6 +324,141 @@ const Apply = () => {
                           <p className="text-xs text-muted-foreground mt-1">
                             This fee helps us process applications efficiently and verify project authenticity.
                           </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Payout Method */}
+                    <div className="bg-card rounded-2xl p-8 shadow-card">
+                      <h2 className="font-display text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                        <Wallet className="w-5 h-5 text-gold" />
+                        Receiving Payment Method
+                      </h2>
+                      <p className="text-sm text-muted-foreground mb-6">
+                        How would you like to receive funds if your application is approved?
+                      </p>
+                      
+                      <div className="space-y-4 mb-6">
+                        <div 
+                          className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.payoutMethod === 'bank' ? 'border-gold bg-gold/10' : 'border-border hover:border-gold/50'}`}
+                          onClick={() => setFormData({ ...formData, payoutMethod: 'bank' })}
+                        >
+                          <Building2 className={`w-5 h-5 ${formData.payoutMethod === 'bank' ? 'text-gold' : 'text-muted-foreground'}`} />
+                          <span className="font-medium">Bank Account</span>
+                        </div>
+                        
+                        <div 
+                          className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.payoutMethod === 'crypto' ? 'border-gold bg-gold/10' : 'border-border hover:border-gold/50'}`}
+                          onClick={() => setFormData({ ...formData, payoutMethod: 'crypto' })}
+                        >
+                          <Bitcoin className={`w-5 h-5 ${formData.payoutMethod === 'crypto' ? 'text-gold' : 'text-muted-foreground'}`} />
+                          <span className="font-medium">Crypto (BTC)</span>
+                        </div>
+                        
+                        <div 
+                          className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.payoutMethod === 'mobilemoney' ? 'border-gold bg-gold/10' : 'border-border hover:border-gold/50'}`}
+                          onClick={() => setFormData({ ...formData, payoutMethod: 'mobilemoney' })}
+                        >
+                          <Smartphone className={`w-5 h-5 ${formData.payoutMethod === 'mobilemoney' ? 'text-gold' : 'text-muted-foreground'}`} />
+                          <span className="font-medium">Mobile Money</span>
+                        </div>
+                      </div>
+
+                      {/* Bank Account Details */}
+                      {formData.payoutMethod === 'bank' && (
+                        <div className="grid md:grid-cols-2 gap-4 p-4 rounded-lg bg-secondary">
+                          <div className="space-y-2">
+                            <Label htmlFor="bankName">Bank Name *</Label>
+                            <Input
+                              id="bankName"
+                              name="bankName"
+                              value={formData.bankName}
+                              onChange={handleInputChange}
+                              placeholder="e.g., Standard Bank"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="bankAccountName">Account Holder Name *</Label>
+                            <Input
+                              id="bankAccountName"
+                              name="bankAccountName"
+                              value={formData.bankAccountName}
+                              onChange={handleInputChange}
+                              placeholder="Name on account"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="bankAccountNumber">Account Number *</Label>
+                            <Input
+                              id="bankAccountNumber"
+                              name="bankAccountNumber"
+                              value={formData.bankAccountNumber}
+                              onChange={handleInputChange}
+                              placeholder="Account number"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="bankSwiftCode">SWIFT/BIC Code</Label>
+                            <Input
+                              id="bankSwiftCode"
+                              name="bankSwiftCode"
+                              value={formData.bankSwiftCode}
+                              onChange={handleInputChange}
+                              placeholder="e.g., SBZAZAJJ"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Crypto Details */}
+                      {formData.payoutMethod === 'crypto' && (
+                        <div className="p-4 rounded-lg bg-secondary">
+                          <div className="space-y-2">
+                            <Label htmlFor="cryptoWalletAddress">BTC Wallet Address *</Label>
+                            <Input
+                              id="cryptoWalletAddress"
+                              name="cryptoWalletAddress"
+                              value={formData.cryptoWalletAddress}
+                              onChange={handleInputChange}
+                              placeholder="e.g., bc1q..."
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Mobile Money Details */}
+                      {formData.payoutMethod === 'mobilemoney' && (
+                        <div className="grid md:grid-cols-2 gap-4 p-4 rounded-lg bg-secondary">
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="mobileMoneyProvider">Provider *</Label>
+                            <Input
+                              id="mobileMoneyProvider"
+                              name="mobileMoneyProvider"
+                              value={formData.mobileMoneyProvider}
+                              onChange={handleInputChange}
+                              placeholder="e.g., M-Pesa, MTN Mobile Money"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="mobileMoneyNumber">Phone Number *</Label>
+                            <Input
+                              id="mobileMoneyNumber"
+                              name="mobileMoneyNumber"
+                              value={formData.mobileMoneyNumber}
+                              onChange={handleInputChange}
+                              placeholder="+254 xxx xxx xxx"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="mobileMoneyName">Registered Name *</Label>
+                            <Input
+                              id="mobileMoneyName"
+                              name="mobileMoneyName"
+                              value={formData.mobileMoneyName}
+                              onChange={handleInputChange}
+                              placeholder="Name on account"
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
