@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail, Building2, Smartphone, Bitcoin, Users } from "lucide-react";
+import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail, Bitcoin, Users } from "lucide-react";
 
 const Apply = () => {
   const { toast } = useToast();
@@ -30,6 +30,10 @@ const Apply = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  const [showCryptoPayment, setShowCryptoPayment] = useState(false);
+  const [cryptoConfirming, setCryptoConfirming] = useState(false);
+  const [cryptoCountdown, setCryptoCountdown] = useState(120);
+  const [otherPaymentMethod, setOtherPaymentMethod] = useState("");
 
   const processingFee = formData.requestedAmount 
     ? (parseFloat(formData.requestedAmount) * 0.04).toFixed(2) 
@@ -439,11 +443,9 @@ const Apply = () => {
                 {/* Payment Method Selection */}
                 <div className="mb-8">
                   <h3 className="font-medium text-foreground mb-4">Select Payment Method</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {[
-                      { id: "bank", label: "Bank Transfer", icon: Building2 },
-                      { id: "card", label: "Card", icon: CreditCard },
-                      { id: "mobile", label: "Mobile Money", icon: Smartphone },
+                      { id: "online", label: "Bank / Card / Mobile Money", icon: CreditCard },
                       { id: "crypto", label: "Crypto (BTC)", icon: Bitcoin },
                       { id: "other", label: "Other / Agent", icon: Users },
                     ].map((method) => (
@@ -462,6 +464,44 @@ const Apply = () => {
                       </button>
                     ))}
                   </div>
+
+                  {/* Online Payment Link */}
+                  {selectedPaymentMethod === "online" && (
+                    <div className="mt-4 p-4 bg-secondary rounded-xl border border-border">
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Click below to complete your payment via bank transfer, card, or mobile money:
+                      </p>
+                      <a
+                        href="https://pay.example.com/urdf"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-gold hover:text-gold/80 font-medium"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        Proceed to Payment Portal
+                        <ArrowRight className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Other Payment Method Input */}
+                  {selectedPaymentMethod === "other" && (
+                    <div className="mt-4 p-4 bg-secondary rounded-xl border border-border">
+                      <Label htmlFor="otherMethod" className="text-sm text-foreground mb-2 block">
+                        Please specify your preferred payment method:
+                      </Label>
+                      <Input
+                        id="otherMethod"
+                        value={otherPaymentMethod}
+                        onChange={(e) => setOtherPaymentMethod(e.target.value)}
+                        placeholder="e.g., Agent payment, Western Union, etc."
+                        className="mb-2"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        We will contact you at your provided email to arrange payment.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4 mb-8">
@@ -493,15 +533,115 @@ const Apply = () => {
                   >
                     Back
                   </Button>
-                  <Button
-                    variant="gold"
-                    className="flex-1"
-                    onClick={handlePayment}
-                    disabled={isSubmitting || !selectedPaymentMethod}
-                  >
-                    {isSubmitting ? "Processing..." : `Pay $${processingFee} USD`}
-                  </Button>
+                  {selectedPaymentMethod === "crypto" ? (
+                    <Button
+                      variant="gold"
+                      className="flex-1"
+                      onClick={() => setShowCryptoPayment(true)}
+                    >
+                      Pay with Bitcoin
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="gold"
+                      className="flex-1"
+                      onClick={handlePayment}
+                      disabled={isSubmitting || !selectedPaymentMethod || (selectedPaymentMethod === "other" && !otherPaymentMethod)}
+                    >
+                      {isSubmitting ? "Processing..." : selectedPaymentMethod === "other" ? "Submit Request" : `Pay $${processingFee} USD`}
+                    </Button>
+                  )}
                 </div>
+              </div>
+            )}
+
+            {/* Crypto Payment Modal */}
+            {showCryptoPayment && (
+              <div className="bg-card rounded-2xl shadow-elegant p-8 border border-border">
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-gold/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Bitcoin className="w-8 h-8 text-gold" />
+                  </div>
+                  <h2 className="text-2xl font-display font-bold text-foreground mb-2">
+                    Bitcoin Payment
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Send exactly <span className="font-bold text-gold">${processingFee} USD</span> worth of BTC
+                  </p>
+                </div>
+
+                <div className="bg-secondary rounded-xl p-4 mb-6">
+                  <Label className="text-sm text-muted-foreground mb-2 block">BTC Address:</Label>
+                  <div className="bg-background p-3 rounded-lg border border-border">
+                    <code className="text-xs md:text-sm text-foreground break-all select-all">
+                      bc1qhv7lva29euqnfapjq2t3lccm392aknew9mtud6
+                    </code>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText("bc1qhv7lva29euqnfapjq2t3lccm392aknew9mtud6");
+                      toast({ title: "Copied!", description: "BTC address copied to clipboard" });
+                    }}
+                    className="mt-2 text-sm text-gold hover:text-gold/80"
+                  >
+                    Copy Address
+                  </button>
+                </div>
+
+                {!cryptoConfirming ? (
+                  <div className="flex gap-4">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setShowCryptoPayment(false)}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      variant="gold"
+                      className="flex-1"
+                      onClick={() => {
+                        setCryptoConfirming(true);
+                        setCryptoCountdown(120);
+                        const interval = setInterval(() => {
+                          setCryptoCountdown((prev) => {
+                            if (prev <= 1) {
+                              clearInterval(interval);
+                              toast({
+                                title: "Payment Confirmed!",
+                                description: "Your application has been submitted successfully.",
+                              });
+                              setCryptoConfirming(false);
+                              setShowCryptoPayment(false);
+                              setShowPayment(false);
+                              return 0;
+                            }
+                            return prev - 1;
+                          });
+                        }, 1000);
+                      }}
+                    >
+                      I've Made the Payment
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <div className="mb-4">
+                      <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-foreground font-medium">Confirming Payment...</p>
+                      <p className="text-muted-foreground text-sm">
+                        Please wait while we verify your transaction
+                      </p>
+                    </div>
+                    <div className="bg-secondary rounded-lg p-3">
+                      <p className="text-2xl font-bold text-gold">
+                        {Math.floor(cryptoCountdown / 60)}:{(cryptoCountdown % 60).toString().padStart(2, '0')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Estimated confirmation time</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
