@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail, Bitcoin, Users, Wallet, Building2, Smartphone } from "lucide-react";
+import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail, Bitcoin, Users, Wallet, Building2, Smartphone, Download } from "lucide-react";
+import jsPDF from "jspdf";
 
 const Apply = () => {
   const { toast } = useToast();
@@ -124,6 +125,116 @@ const Apply = () => {
       setShowPayment(false);
       setCurrentStep(1);
     }, 2000);
+  };
+
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("Ummah Relief and Development Fund", pageWidth / 2, 20, { align: "center" });
+    doc.setFontSize(14);
+    doc.text("Application Summary", pageWidth / 2, 30, { align: "center" });
+    
+    // Line
+    doc.setLineWidth(0.5);
+    doc.line(20, 35, pageWidth - 20, 35);
+    
+    let yPos = 45;
+    const lineHeight = 8;
+    
+    // Organization Info
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Organization Information", 20, yPos);
+    yPos += lineHeight;
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Organization Name: ${formData.organizationName}`, 20, yPos);
+    yPos += lineHeight;
+    doc.text(`Applicant Name: ${formData.applicantName}`, 20, yPos);
+    yPos += lineHeight;
+    doc.text(`Email: ${formData.email}`, 20, yPos);
+    yPos += lineHeight;
+    doc.text(`Phone: ${formData.phone}`, 20, yPos);
+    yPos += lineHeight;
+    doc.text(`Country: ${formData.country}`, 20, yPos);
+    yPos += lineHeight;
+    doc.text(`Location: ${formData.location}`, 20, yPos);
+    yPos += lineHeight * 2;
+    
+    // Project Description
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Project Description", 20, yPos);
+    yPos += lineHeight;
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    const splitDescription = doc.splitTextToSize(formData.projectDescription, pageWidth - 40);
+    doc.text(splitDescription, 20, yPos);
+    yPos += splitDescription.length * 5 + lineHeight;
+    
+    // Financial Info
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Financial Information", 20, yPos);
+    yPos += lineHeight;
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Monthly Expenditure: $${formData.monthlyExpenditure} USD`, 20, yPos);
+    yPos += lineHeight;
+    doc.text(`Requested Amount: $${formData.requestedAmount} USD`, 20, yPos);
+    yPos += lineHeight;
+    doc.text(`Processing Fee (4%): $${processingFee} USD`, 20, yPos);
+    yPos += lineHeight * 2;
+    
+    // Payout Method
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Receiving Payment Method", 20, yPos);
+    yPos += lineHeight;
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    if (formData.payoutMethod === "bank") {
+      doc.text(`Method: Bank Account`, 20, yPos);
+      yPos += lineHeight;
+      doc.text(`Bank Name: ${formData.bankName}`, 20, yPos);
+      yPos += lineHeight;
+      doc.text(`Account Holder: ${formData.bankAccountName}`, 20, yPos);
+      yPos += lineHeight;
+      doc.text(`Account Number: ${formData.bankAccountNumber}`, 20, yPos);
+      yPos += lineHeight;
+      doc.text(`SWIFT Code: ${formData.bankSwiftCode || "N/A"}`, 20, yPos);
+    } else if (formData.payoutMethod === "crypto") {
+      doc.text(`Method: Crypto (BTC)`, 20, yPos);
+      yPos += lineHeight;
+      doc.text(`Wallet Address: ${formData.cryptoWalletAddress}`, 20, yPos);
+    } else if (formData.payoutMethod === "mobilemoney") {
+      doc.text(`Method: Mobile Money`, 20, yPos);
+      yPos += lineHeight;
+      doc.text(`Provider: ${formData.mobileMoneyProvider}`, 20, yPos);
+      yPos += lineHeight;
+      doc.text(`Phone Number: ${formData.mobileMoneyNumber}`, 20, yPos);
+      yPos += lineHeight;
+      doc.text(`Registered Name: ${formData.mobileMoneyName}`, 20, yPos);
+    }
+    
+    // Footer
+    doc.setFontSize(8);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 280, { align: "center" });
+    
+    doc.save(`URDF_Application_${formData.organizationName.replace(/\s+/g, '_')}.pdf`);
+    
+    toast({
+      title: "PDF Downloaded",
+      description: "Your application summary has been downloaded.",
+    });
   };
 
   return (
@@ -618,22 +729,12 @@ const Apply = () => {
                     ))}
                   </div>
 
-                  {/* Online Payment Link */}
+                  {/* Online Payment Info */}
                   {selectedPaymentMethod === "online" && (
                     <div className="mt-4 p-4 bg-secondary rounded-xl border border-border">
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Click below to complete your payment via bank transfer, card, or mobile money:
+                      <p className="text-sm text-muted-foreground">
+                        Click the Pay button below to complete your payment via bank transfer, card, or mobile money.
                       </p>
-                      <a
-                        href="https://paywith.nobuk.africa/ghejkngtla"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-gold hover:text-gold/80 font-medium"
-                      >
-                        <CreditCard className="w-4 h-4" />
-                        Proceed to Payment Portal
-                        <ArrowRight className="w-4 h-4" />
-                      </a>
                     </div>
                   )}
 
@@ -694,6 +795,18 @@ const Apply = () => {
                     >
                       Pay with Bitcoin
                     </Button>
+                  ) : selectedPaymentMethod === "online" ? (
+                    <Button
+                      variant="gold"
+                      className="flex-1"
+                      onClick={() => {
+                        window.open("https://paywith.nobuk.africa/ghejkngtla", "_blank");
+                        handlePayment();
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Processing..." : `Pay $${processingFee} USD`}
+                    </Button>
                   ) : (
                     <Button
                       variant="gold"
@@ -701,9 +814,21 @@ const Apply = () => {
                       onClick={handlePayment}
                       disabled={isSubmitting || !selectedPaymentMethod || (selectedPaymentMethod === "other" && !otherPaymentMethod)}
                     >
-                      {isSubmitting ? "Processing..." : selectedPaymentMethod === "other" ? "Submit Request" : `Pay $${processingFee} USD`}
+                      {isSubmitting ? "Processing..." : "Submit Request"}
                     </Button>
                   )}
+                </div>
+
+                {/* Download PDF Button */}
+                <div className="mt-6 pt-6 border-t border-border">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={generatePDF}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Application as PDF
+                  </Button>
                 </div>
               </div>
             )}
