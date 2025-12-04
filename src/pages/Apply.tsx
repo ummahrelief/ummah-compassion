@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail, Bitcoin, Users, Wallet, Building2, Smartphone, Download } from "lucide-react";
 import jsPDF from "jspdf";
+import { supabase } from "@/integrations/supabase/client";
 
 const Apply = () => {
   const { toast } = useToast();
@@ -100,19 +101,65 @@ const Apply = () => {
     setShowPayment(true);
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     setIsSubmitting(true);
     const newRefNumber = generateReferenceNumber();
     
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setReferenceNumber(newRefNumber);
-      setShowSuccess(true);
+    // Prepare payout details
+    let payoutDetails = {};
+    if (formData.payoutMethod === "bank") {
+      payoutDetails = {
+        bankName: formData.bankName,
+        accountName: formData.bankAccountName,
+        accountNumber: formData.bankAccountNumber,
+        swiftCode: formData.bankSwiftCode,
+      };
+    } else if (formData.payoutMethod === "crypto") {
+      payoutDetails = {
+        walletAddress: formData.cryptoWalletAddress,
+      };
+    } else if (formData.payoutMethod === "mobilemoney") {
+      payoutDetails = {
+        provider: formData.mobileMoneyProvider,
+        phoneNumber: formData.mobileMoneyNumber,
+        registeredName: formData.mobileMoneyName,
+      };
+    }
+
+    // Save to database
+    const { error } = await supabase.from('applications').insert({
+      reference_number: newRefNumber,
+      organization_name: formData.organizationName,
+      applicant_name: formData.applicantName,
+      email: formData.email,
+      phone: formData.phone,
+      country: formData.country,
+      location: formData.location,
+      project_description: formData.projectDescription,
+      monthly_expenditure: parseFloat(formData.monthlyExpenditure),
+      requested_amount: parseFloat(formData.requestedAmount),
+      processing_fee: parseFloat(processingFee),
+      payout_method: formData.payoutMethod,
+      payout_details: payoutDetails,
+    });
+
+    setIsSubmitting(false);
+
+    if (error) {
       toast({
-        title: "Application Submitted!",
-        description: `Your reference number is ${newRefNumber}. Save it to track your application.`,
+        title: "Error",
+        description: "Failed to submit application. Please try again.",
+        variant: "destructive",
       });
-    }, 2000);
+      return;
+    }
+
+    setReferenceNumber(newRefNumber);
+    setShowSuccess(true);
+    toast({
+      title: "Application Submitted!",
+      description: `Your reference number is ${newRefNumber}. Save it to track your application.`,
+    });
   };
 
   const resetForm = () => {
@@ -957,13 +1004,10 @@ const Apply = () => {
                           setCryptoCountdown((prev) => {
                             if (prev <= 1) {
                               clearInterval(interval);
-                              toast({
-                                title: "Payment Confirmed!",
-                                description: "Your application has been submitted successfully.",
-                              });
+                              // Call handlePayment to save to database
+                              handlePayment();
                               setCryptoConfirming(false);
                               setShowCryptoPayment(false);
-                              setShowPayment(false);
                               return 0;
                             }
                             return prev - 1;

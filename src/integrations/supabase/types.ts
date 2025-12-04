@@ -14,16 +14,103 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      applications: {
+        Row: {
+          admin_notes: string | null
+          applicant_name: string
+          country: string
+          created_at: string
+          email: string
+          id: string
+          location: string
+          monthly_expenditure: number
+          organization_name: string
+          payout_details: Json | null
+          payout_method: string
+          phone: string
+          processing_fee: number
+          project_description: string
+          reference_number: string
+          requested_amount: number
+          status: Database["public"]["Enums"]["application_status"]
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          applicant_name: string
+          country: string
+          created_at?: string
+          email: string
+          id?: string
+          location: string
+          monthly_expenditure: number
+          organization_name: string
+          payout_details?: Json | null
+          payout_method: string
+          phone: string
+          processing_fee: number
+          project_description: string
+          reference_number: string
+          requested_amount: number
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          applicant_name?: string
+          country?: string
+          created_at?: string
+          email?: string
+          id?: string
+          location?: string
+          monthly_expenditure?: number
+          organization_name?: string
+          payout_details?: Json | null
+          payout_method?: string
+          phone?: string
+          processing_fee?: number
+          project_description?: string
+          reference_number?: string
+          requested_amount?: number
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      application_status: "pending" | "allocated" | "disbursed" | "issue"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +237,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      application_status: ["pending", "allocated", "disbursed", "issue"],
+    },
   },
 } as const
