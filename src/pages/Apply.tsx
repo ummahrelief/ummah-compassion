@@ -44,6 +44,14 @@ const Apply = () => {
   const [cryptoConfirming, setCryptoConfirming] = useState(false);
   const [cryptoCountdown, setCryptoCountdown] = useState(120);
   const [otherPaymentMethod, setOtherPaymentMethod] = useState("");
+  const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const generateReferenceNumber = () => {
+    const year = new Date().getFullYear();
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `URDF-${year}-${random}`;
+  };
 
   const processingFee = formData.requestedAmount 
     ? (parseFloat(formData.requestedAmount) * 0.04).toFixed(2) 
@@ -94,37 +102,46 @@ const Apply = () => {
 
   const handlePayment = () => {
     setIsSubmitting(true);
+    const newRefNumber = generateReferenceNumber();
     
     setTimeout(() => {
       setIsSubmitting(false);
+      setReferenceNumber(newRefNumber);
+      setShowSuccess(true);
       toast({
         title: "Application Submitted!",
-        description: "Your application has been received. We will review it and contact you within 5-7 business days.",
+        description: `Your reference number is ${newRefNumber}. Save it to track your application.`,
       });
-      setFormData({
-        organizationName: "",
-        applicantName: "",
-        email: "",
-        phone: "",
-        country: "",
-        location: "",
-        projectDescription: "",
-        monthlyExpenditure: "",
-        requestedAmount: "",
-        payoutMethod: "",
-        bankName: "",
-        bankAccountName: "",
-        bankAccountNumber: "",
-        bankSwiftCode: "",
-        cryptoWalletAddress: "",
-        mobileMoneyProvider: "",
-        mobileMoneyNumber: "",
-        mobileMoneyName: "",
-      });
-      setDocumentsConfirmed({ registration: false, idDocument: false, projectPhotos: false });
-      setShowPayment(false);
-      setCurrentStep(1);
     }, 2000);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      organizationName: "",
+      applicantName: "",
+      email: "",
+      phone: "",
+      country: "",
+      location: "",
+      projectDescription: "",
+      monthlyExpenditure: "",
+      requestedAmount: "",
+      payoutMethod: "",
+      bankName: "",
+      bankAccountName: "",
+      bankAccountNumber: "",
+      bankSwiftCode: "",
+      cryptoWalletAddress: "",
+      mobileMoneyProvider: "",
+      mobileMoneyNumber: "",
+      mobileMoneyName: "",
+    });
+    setDocumentsConfirmed({ registration: false, idDocument: false, projectPhotos: false });
+    setShowPayment(false);
+    setShowSuccess(false);
+    setReferenceNumber(null);
+    setCurrentStep(1);
+    setSelectedPaymentMethod(null);
   };
 
   const generatePDF = () => {
@@ -138,11 +155,18 @@ const Apply = () => {
     doc.setFontSize(14);
     doc.text("Application Summary", pageWidth / 2, 30, { align: "center" });
     
+    // Reference Number
+    if (referenceNumber) {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Reference Number: ${referenceNumber}`, pageWidth / 2, 40, { align: "center" });
+    }
+    
     // Line
     doc.setLineWidth(0.5);
-    doc.line(20, 35, pageWidth - 20, 35);
+    doc.line(20, 45, pageWidth - 20, 45);
     
-    let yPos = 45;
+    let yPos = 55;
     const lineHeight = 8;
     
     // Organization Info
@@ -229,7 +253,10 @@ const Apply = () => {
     doc.setFontSize(8);
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 280, { align: "center" });
     
-    doc.save(`URDF_Application_${formData.organizationName.replace(/\s+/g, '_')}.pdf`);
+    const fileName = referenceNumber 
+      ? `URDF_Application_${referenceNumber}.pdf`
+      : `URDF_Application_${formData.organizationName.replace(/\s+/g, '_')}.pdf`;
+    doc.save(fileName);
     
     toast({
       title: "PDF Downloaded",
@@ -260,29 +287,73 @@ const Apply = () => {
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            {/* Step Indicator */}
-            {!showPayment && (
-              <div className="flex items-center justify-center mb-12">
-                <div className="flex items-center gap-4">
-                  <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-gold' : 'text-muted-foreground'}`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${currentStep >= 1 ? 'bg-gold text-forest-dark' : 'bg-muted text-muted-foreground'}`}>
-                      1
-                    </div>
-                    <span className="hidden sm:inline font-medium">Basic Info</span>
-                  </div>
-                  <div className={`w-12 h-0.5 ${currentStep >= 2 ? 'bg-gold' : 'bg-muted'}`} />
-                  <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-gold' : 'text-muted-foreground'}`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${currentStep >= 2 ? 'bg-gold text-forest-dark' : 'bg-muted text-muted-foreground'}`}>
-                      2
-                    </div>
-                    <span className="hidden sm:inline font-medium">Financial & Documents</span>
-                  </div>
+            {/* Success Screen */}
+            {showSuccess && referenceNumber ? (
+              <div className="bg-card rounded-2xl p-8 shadow-card text-center">
+                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle2 className="w-10 h-10 text-green-500" />
+                </div>
+                <h2 className="font-display text-2xl font-bold text-foreground mb-4">
+                  Application Submitted Successfully!
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                  Your application has been received. Please save your reference number to track your application status.
+                </p>
+                
+                <div className="bg-secondary rounded-xl p-6 mb-8">
+                  <p className="text-sm text-muted-foreground mb-2">Your Reference Number</p>
+                  <p className="text-2xl font-bold text-gold font-mono">{referenceNumber}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(referenceNumber);
+                      toast({ title: "Copied!", description: "Reference number copied to clipboard" });
+                    }}
+                    className="mt-3 text-sm text-gold hover:text-gold/80 underline"
+                  >
+                    Copy to Clipboard
+                  </button>
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-6">
+                  You can track your application status on the homepage under "Disbursement Status" section.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button variant="outline" onClick={generatePDF}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download PDF
+                  </Button>
+                  <Button variant="gold" onClick={resetForm}>
+                    Submit Another Application
+                  </Button>
                 </div>
               </div>
-            )}
-
-            {!showPayment ? (
+            ) : (
               <>
+                {/* Step Indicator */}
+                {!showPayment && (
+                  <div className="flex items-center justify-center mb-12">
+                    <div className="flex items-center gap-4">
+                      <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-gold' : 'text-muted-foreground'}`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${currentStep >= 1 ? 'bg-gold text-forest-dark' : 'bg-muted text-muted-foreground'}`}>
+                          1
+                        </div>
+                        <span className="hidden sm:inline font-medium">Basic Info</span>
+                      </div>
+                      <div className={`w-12 h-0.5 ${currentStep >= 2 ? 'bg-gold' : 'bg-muted'}`} />
+                      <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-gold' : 'text-muted-foreground'}`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${currentStep >= 2 ? 'bg-gold text-forest-dark' : 'bg-muted text-muted-foreground'}`}>
+                          2
+                        </div>
+                        <span className="hidden sm:inline font-medium">Financial & Documents</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!showPayment ? (
+                  <>
                 {/* Step 1: Basic Information & Project Description */}
                 {currentStep === 1 && (
                   <form onSubmit={handleStep1Submit} className="space-y-8">
@@ -921,6 +992,8 @@ const Apply = () => {
                   </div>
                 )}
               </div>
+            )}
+              </>
             )}
           </div>
         </div>
