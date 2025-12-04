@@ -33,6 +33,9 @@ export function CTASection() {
                 </Link>
               </Button>
               <Button variant="hero-outline" size="lg" asChild>
+                <a href="/#disbursement">Track Disbursement</a>
+              </Button>
+              <Button variant="hero-outline" size="lg" asChild>
                 <Link to="/partnerships">Become a Partner</Link>
               </Button>
             </div>

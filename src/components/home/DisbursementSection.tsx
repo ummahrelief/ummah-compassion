@@ -3,22 +3,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Search, Clock, CheckCircle2, AlertCircle, Banknote } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import type { Database } from "@/integrations/supabase/types";
 
-type ApplicationStatus = "pending" | "allocated" | "disbursed" | "issue" | null;
+type ApplicationStatus = Database['public']['Enums']['application_status'];
 
-interface StatusInfo {
+interface ApplicationResult {
+  reference_number: string;
   status: ApplicationStatus;
-  message: string;
-  date?: string;
+  admin_notes: string | null;
+  updated_at: string;
+  organization_name: string;
 }
 
 export const DisbursementSection = () => {
+  const { toast } = useToast();
   const [referenceNumber, setReferenceNumber] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [statusInfo, setStatusInfo] = useState<StatusInfo | null>(null);
+  const [application, setApplication] = useState<ApplicationResult | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!referenceNumber.trim()) return;
@@ -26,19 +32,23 @@ export const DisbursementSection = () => {
     setIsSearching(true);
     setHasSearched(true);
     
-    // Simulate API call - in production this would check a database
-    setTimeout(() => {
-      // For demo purposes, generate random status based on reference
-      const statuses: ApplicationStatus[] = ["pending", "allocated", "disbursed", "issue"];
-      const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-      
-      setStatusInfo({
-        status: randomStatus,
-        message: getStatusMessage(randomStatus),
-        date: new Date().toLocaleDateString(),
+    const { data, error } = await supabase
+      .from('applications')
+      .select('reference_number, status, admin_notes, updated_at, organization_name')
+      .eq('reference_number', referenceNumber.trim().toUpperCase())
+      .maybeSingle();
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to search. Please try again.",
+        variant: "destructive",
       });
-      setIsSearching(false);
-    }, 1500);
+      setApplication(null);
+    } else {
+      setApplication(data);
+    }
+    setIsSearching(false);
   };
 
   const getStatusMessage = (status: ApplicationStatus): string => {
@@ -140,28 +150,34 @@ export const DisbursementSection = () => {
               </div>
             </div>
 
-            {hasSearched && statusInfo && (
-              <div className={`mt-6 p-6 rounded-xl border ${getStatusColor(statusInfo.status)}`}>
+            {hasSearched && application && (
+              <div className={`mt-6 p-6 rounded-xl border ${getStatusColor(application.status)}`}>
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
-                    {getStatusIcon(statusInfo.status)}
+                    {getStatusIcon(application.status)}
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg mb-1">
-                      {getStatusLabel(statusInfo.status)}
+                      {getStatusLabel(application.status)}
                     </h3>
                     <p className="text-sm opacity-80 mb-3">
-                      {statusInfo.message}
+                      {getStatusMessage(application.status)}
                     </p>
-                    <p className="text-xs opacity-60">
-                      Last updated: {statusInfo.date}
+                    {application.admin_notes && (
+                      <div className="mt-3 p-3 bg-background/50 rounded-lg">
+                        <p className="text-xs font-medium mb-1">Message from Admin:</p>
+                        <p className="text-sm">{application.admin_notes}</p>
+                      </div>
+                    )}
+                    <p className="text-xs opacity-60 mt-3">
+                      Last updated: {new Date(application.updated_at).toLocaleString()}
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {hasSearched && !statusInfo && !isSearching && (
+            {hasSearched && !application && !isSearching && (
               <div className="mt-6 p-6 rounded-xl bg-muted border border-border text-center">
                 <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-muted-foreground">

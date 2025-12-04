@@ -13,6 +13,7 @@ const footerLinks = {
     { name: "FAQ", href: "/contact" },
     { name: "Privacy Policy", href: "/privacy" },
     { name: "Terms & Conditions", href: "/terms" },
+    { name: "Admin Portal", href: "/admin/auth" },
   ],
 };
 
