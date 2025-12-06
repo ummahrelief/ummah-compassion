@@ -55,6 +55,9 @@ export function HeroSection() {
               </Link>
             </Button>
             <Button variant="hero-outline" size="lg" asChild>
+              <a href="/#disbursement">Track Disbursement</a>
+            </Button>
+            <Button variant="hero-outline" size="lg" asChild>
               <Link to="/partnerships">Partner With Us</Link>
             </Button>
             <Button variant="hero-outline" size="lg" asChild>
