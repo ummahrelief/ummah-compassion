@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail, Bitcoin, Users, Wallet, Building2, Smartphone, Download } from "lucide-react";
+import { FileText, CreditCard, CheckCircle2, ArrowRight, ArrowLeft, Mail, Bitcoin, Users, Wallet, Building2, Smartphone, Download, RefreshCw, Copy } from "lucide-react";
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -45,13 +45,101 @@ const Apply = () => {
   const [cryptoConfirming, setCryptoConfirming] = useState(false);
   const [cryptoCountdown, setCryptoCountdown] = useState(120);
   const [otherPaymentMethod, setOtherPaymentMethod] = useState("");
-  const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
+  const [referenceNumber, setReferenceNumber] = useState<string | null>(() => {
+    // Check localStorage for existing reference number
+    return localStorage.getItem('urdf_application_ref') || null;
+  });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [resumeRefInput, setResumeRefInput] = useState("");
+  const [isLoadingApplication, setIsLoadingApplication] = useState(false);
+
+  // Load saved form data on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem('urdf_application_data');
+    const savedStep = localStorage.getItem('urdf_application_step');
+    if (savedData) {
+      try {
+        setFormData(JSON.parse(savedData));
+      } catch (e) {
+        console.error("Error loading saved form data", e);
+      }
+    }
+    if (savedStep) {
+      setCurrentStep(parseInt(savedStep, 10) || 1);
+    }
+  }, []);
+
+  // Auto-save form progress
+  useEffect(() => {
+    if (referenceNumber) {
+      localStorage.setItem('urdf_application_data', JSON.stringify(formData));
+      localStorage.setItem('urdf_application_step', currentStep.toString());
+    }
+  }, [formData, currentStep, referenceNumber]);
+
+  // Save form data to localStorage whenever it changes
+  const saveFormProgress = () => {
+    if (referenceNumber) {
+      localStorage.setItem('urdf_application_ref', referenceNumber);
+    }
+    localStorage.setItem('urdf_application_data', JSON.stringify(formData));
+    localStorage.setItem('urdf_application_step', currentStep.toString());
+  };
 
   const generateReferenceNumber = () => {
     const year = new Date().getFullYear();
     const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `URDF-${year}-${random}`;
+    const ref = `URDF-${year}-${random}`;
+    localStorage.setItem('urdf_application_ref', ref);
+    return ref;
+  };
+
+  const handleResumeApplication = async () => {
+    if (!resumeRefInput.trim()) {
+      toast({
+        title: "Enter Reference Number",
+        description: "Please enter your application reference number to resume.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoadingApplication(true);
+    
+    // Check if application exists in database
+    const { data, error } = await supabase
+      .from('applications')
+      .select('*')
+      .eq('reference_number', resumeRefInput.trim().toUpperCase())
+      .single();
+
+    setIsLoadingApplication(false);
+
+    if (data) {
+      toast({
+        title: "Application Already Submitted",
+        description: "This application has already been submitted. Use the Track Disbursement feature to check its status.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Set reference number and continue with empty form
+    setReferenceNumber(resumeRefInput.trim().toUpperCase());
+    localStorage.setItem('urdf_application_ref', resumeRefInput.trim().toUpperCase());
+    toast({
+      title: "Reference Number Set",
+      description: "Continue filling out your application.",
+    });
+  };
+
+  const startNewApplication = () => {
+    const newRef = generateReferenceNumber();
+    setReferenceNumber(newRef);
+    toast({
+      title: "New Application Started",
+      description: `Your reference number is ${newRef}. Save it to continue later.`,
+    });
   };
 
   const processingFee = formData.requestedAmount 
@@ -103,7 +191,7 @@ const Apply = () => {
 
   const handlePayment = async () => {
     setIsSubmitting(true);
-    const newRefNumber = generateReferenceNumber();
+    const newRefNumber = referenceNumber || generateReferenceNumber();
     
     // Prepare payout details
     let payoutDetails = {};
@@ -189,6 +277,11 @@ const Apply = () => {
     setReferenceNumber(null);
     setCurrentStep(1);
     setSelectedPaymentMethod(null);
+    setResumeRefInput("");
+    // Clear localStorage
+    localStorage.removeItem('urdf_application_ref');
+    localStorage.removeItem('urdf_application_data');
+    localStorage.removeItem('urdf_application_step');
   };
 
   const generatePDF = () => {
@@ -378,8 +471,72 @@ const Apply = () => {
               </div>
             ) : (
               <>
-                {/* Step Indicator */}
+                {/* Reference Number Section - Always at Top */}
                 {!showPayment && (
+                  <div className="bg-card rounded-2xl p-6 shadow-card mb-8">
+                    {referenceNumber ? (
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Your Application Reference</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl font-bold text-gold font-mono">{referenceNumber}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(referenceNumber);
+                                toast({ title: "Copied!", description: "Reference number copied to clipboard" });
+                              }}
+                              className="p-1 text-muted-foreground hover:text-gold transition-colors"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Save this to continue your application later</p>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={resetForm}
+                          className="text-muted-foreground"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Start New
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <h3 className="font-semibold text-foreground mb-2">Start or Resume Your Application</h3>
+                          <p className="text-sm text-muted-foreground">Begin a new application or enter your reference number to continue where you left off.</p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                          <Button variant="gold" onClick={startNewApplication}>
+                            Start New Application
+                          </Button>
+                          <span className="text-muted-foreground">or</span>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter Reference Number"
+                              value={resumeRefInput}
+                              onChange={(e) => setResumeRefInput(e.target.value)}
+                              className="w-48"
+                            />
+                            <Button 
+                              variant="outline" 
+                              onClick={handleResumeApplication}
+                              disabled={isLoadingApplication}
+                            >
+                              {isLoadingApplication ? "Checking..." : "Resume"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Step Indicator */}
+                {!showPayment && referenceNumber && (
                   <div className="flex items-center justify-center mb-12">
                     <div className="flex items-center gap-4">
                       <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-gold' : 'text-muted-foreground'}`}>
@@ -399,7 +556,7 @@ const Apply = () => {
                   </div>
                 )}
 
-                {!showPayment ? (
+                {!showPayment && referenceNumber ? (
                   <>
                 {/* Step 1: Basic Information & Project Description */}
                 {currentStep === 1 && (
